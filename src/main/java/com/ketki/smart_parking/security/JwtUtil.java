@@ -6,27 +6,28 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
+import java.util.Base64;
 import java.util.Date;
 
 @Component
 public class JwtUtil {
 
-    // ─────────────────────────────────────────
-    // Pulled from application.properties
-    // ─────────────────────────────────────────
     @Value("${jwt.secret}")
     private String secret;
 
     @Value("${jwt.expiration}")
     private long expirationMs;
 
+    // ─────────────────────────────────────────
+    // Base64 decode the secret — guarantees
+    // key is always 256 bits regardless of
+    // the raw string length
+    // ─────────────────────────────────────────
     private Key getSigningKey() {
-        return Keys.hmacShaKeyFor(secret.getBytes());
+        byte[] keyBytes = Base64.getDecoder().decode(secret);
+        return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    // ─────────────────────────────────────────
-    // Generate a JWT token for a user
-    // ─────────────────────────────────────────
     public String generateToken(String username, String role) {
         return Jwts.builder()
                 .setSubject(username)
@@ -37,23 +38,14 @@ public class JwtUtil {
                 .compact();
     }
 
-    // ─────────────────────────────────────────
-    // Extract username from token
-    // ─────────────────────────────────────────
     public String extractUsername(String token) {
         return getClaims(token).getSubject();
     }
 
-    // ─────────────────────────────────────────
-    // Extract role from token
-    // ─────────────────────────────────────────
     public String extractRole(String token) {
         return getClaims(token).get("role", String.class);
     }
 
-    // ─────────────────────────────────────────
-    // Validate token — checks signature + expiry
-    // ─────────────────────────────────────────
     public boolean validateToken(String token) {
         try {
             getClaims(token);
@@ -72,9 +64,6 @@ public class JwtUtil {
         return false;
     }
 
-    // ─────────────────────────────────────────
-    // Internal — parse and return all claims
-    // ─────────────────────────────────────────
     private Claims getClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())

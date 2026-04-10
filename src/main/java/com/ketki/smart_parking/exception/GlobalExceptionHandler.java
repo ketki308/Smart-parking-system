@@ -45,8 +45,10 @@ public class GlobalExceptionHandler {
     // 500 - Catch-all for unexpected errors
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneric(Exception ex) {
+        // Temporarily show real error for debugging
+        ex.printStackTrace(); // prints full error in console
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse(500, "Something went wrong. Please try again later."));
+                .body(new ErrorResponse(500, ex.getMessage()));
     }
 }
